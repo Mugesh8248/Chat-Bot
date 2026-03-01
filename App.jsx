@@ -13,8 +13,7 @@ export default function App() {
     const userMessage = newMessages[0].text;
 
     try {
-
-      const res = await axios.post("http://10.0.2.2:8000/chat", {
+      const res = await axios.post("http://192.168.0.119:8000/chat", {
         message: userMessage
       });
 
@@ -24,14 +23,28 @@ export default function App() {
         createdAt: new Date(),
         user: {
           _id: 2,
-          name: "Gemini AI"
+          name: "Groq AI"
         }
       };
 
       setMessages(previous => GiftedChat.append(previous, [botMessage]));
 
     } catch (error) {
+
+      const errorMessage = {
+        _id: Math.random().toString(),
+        text: "⚠️ Server error. Please try again.",
+        createdAt: new Date(),
+        user: {
+          _id: 2,
+          name: "Groq AI"
+        }
+      };
+
+      setMessages(previous => GiftedChat.append(previous, [errorMessage]));
+
       console.log(error);
+
     }
   };
 
