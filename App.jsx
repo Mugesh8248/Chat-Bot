@@ -109,17 +109,6 @@ export default function App() {
               />
             )}
 
-            // renderSend={(props) => (
-            //   <Send {...props}>
-            //     <View style={styles.sendButton}>
-            //       <Image
-            //         source={require("./assets/send.png")}
-            //         style={{ width: 18, height: 18, tintColor: "#fff" }}
-            //       />
-            //     </View>
-            //   </Send>
-            // )}
-
             renderSend={(props) => (
               <Send {...props} containerStyle={styles.sendContainer}>
                 <View style={styles.sendButton}>
@@ -140,12 +129,10 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: "#121212"
   },
-
   header: {
     paddingTop: 10,
     paddingBottom: 10,
@@ -158,7 +145,6 @@ const styles = StyleSheet.create({
     marginRight: 6,
     marginBottom: 2
   },
-
   sendButton: {
     backgroundColor: "#2979FF",
     borderRadius: 18,
@@ -171,19 +157,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold"
   },
-
-  // inputToolbar: {
-  //   position: "absolute",
-  //   left: 0,
-  //   right: 0,
-  //   bottom: 35,
-  //   marginHorizontal: 10,
-  //   marginBottom: 15,
-  //   borderRadius: 15,
-  //   backgroundColor: "#1F1F1F",
-  //   borderTopWidth: 0,
-  //   elevation: 5
-  // },
   inputToolbar: {
     marginHorizontal: 10,
     marginBottom: 45,
@@ -203,5 +176,4 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     minHeight: 40
   },
-
 });
