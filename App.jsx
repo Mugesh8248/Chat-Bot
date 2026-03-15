@@ -1,129 +1,169 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, StatusBar } from "react-native";
-import { GiftedChat, Bubble, InputToolbar, Send, Composer } from "react-native-gifted-chat";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  TouchableWithoutFeedback,
+  Keyboard
+} from "react-native";
 import axios from "axios";
-import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  SafeAreaProvider
+} from "react-native-safe-area-context";
 
 export default function App() {
-
   const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
 
-  const onSend = async (newMessages = []) => {
+  const flatListRef = useRef(null);
 
-    setMessages(previous => GiftedChat.append(previous, newMessages));
+  const userId = "EMP001";
 
-    const userMessage = newMessages[0].text;
+  useEffect(() => {
+    setMessages([
+      {
+        id: "1",
+        text: "Please enter your mobile number 📱",
+        sender: "bot"
+      }
+    ]);
+  }, []);
+
+  const sendMessage = async () => {
+    if (!input.trim() || typing) return;
+
+    const rawText = input.trim();
+
+    const userMessage = {
+      id: Date.now().toString(),
+      text: rawText,
+      sender: "user"
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setTyping(true);
 
     try {
-
-      const res = await axios.post("http://192.168.0.119:8000/chat", {
-        message: userMessage
-      });
-      console.log("Bot reply:", res);
+      const response = await axios.post(
+        "http://192.168.0.108:8000/chat",
+        {
+          user_id: userId,
+          message: rawText
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          },
+          timeout: 10000
+        }
+      );
 
       const botMessage = {
-        _id: Math.random().toString(),
-        text: res.data.reply,
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: "Groq AI"
-        }
+        id: Math.random().toString(),
+        text: response.data.reply || "⚠️ No reply from AI",
+        sender: "bot"
       };
 
-      setMessages(previous => GiftedChat.append(previous, [botMessage]));
+      setMessages(prev => [...prev, botMessage]);
 
     } catch (error) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Math.random().toString(),
+          text: "⚠️ Unable to connect to server",
+          sender: "bot"
+        }
+      ]);
 
-      const errorMessage = {
-        _id: Math.random().toString(),
-        text: "⚠️ Server error. Please try again.",
-        createdAt: new Date(),
-        user: { _id: 2, name: "Groq AI" }
-      };
-
-      setMessages(previous => GiftedChat.append(previous, [errorMessage]));
+    } finally {
+      setTyping(false);
     }
   };
 
+  const renderItem = ({ item }) => (
+    <View
+      style={[
+        styles.messageContainer,
+        item.sender === "user"
+          ? styles.userMessage
+          : styles.botMessage
+      ]}
+    >
+      <Text style={styles.messageText}>{item.text}</Text>
+    </View>
+  );
+
   return (
     <SafeAreaProvider>
+      <StatusBar barStyle="light-content" backgroundColor="#2979FF" />
 
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#2979FF"
-      />
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            style={styles.wrapper}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "android" ? 25 : 0}
+          >
+            <View style={styles.header}>
+              <Text style={styles.headerText}>Service Chat Bot</Text>
+            </View>
 
-      <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={item => item.id}
+              renderItem={renderItem}
+              contentContainerStyle={styles.listContent}
+              keyboardShouldPersistTaps="handled"
+              onContentSizeChange={() =>
+                flatListRef.current?.scrollToEnd({ animated: true })
+              }
+            />
 
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerText}>Chat Bot</Text>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <GiftedChat
-            messages={messages}
-            onSend={(messages) => onSend(messages)}
-            user={{ _id: 1 }}
-            keyboardShouldPersistTaps="handled"
-            // bottomOffset={20}
-            alwaysShowSend
-            listViewProps={{
-              style: { backgroundColor: "#121212" }
-            }}
-
-            renderBubble={(props) => (
-              <Bubble
-                {...props}
-                wrapperStyle={{
-                  right: {
-                    backgroundColor: "#2979FF",
-                    padding: 6
-                  },
-                  left: {
-                    backgroundColor: "#2A2A2A",
-                    padding: 6
-                  }
-                }}
-                textStyle={{
-                  right: { color: "#fff" },
-                  left: { color: "#eee" }
-                }}
-              />
+            {typing && (
+              <View style={styles.typingContainer}>
+                <ActivityIndicator size="small" color="#2979FF" />
+                <Text style={styles.typingText}> AI typing...</Text>
+              </View>
             )}
 
-            renderInputToolbar={(props) => (
-              <InputToolbar
-                {...props}
-                containerStyle={styles.inputToolbar}
-              />
-            )}
-
-            renderComposer={(props) => (
-              <Composer
-                {...props}
-                textInputStyle={styles.textInput}
-                placeholder="Ask something..."
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Type here..."
                 placeholderTextColor="#888"
+                multiline
+                returnKeyType="send"
+                onSubmitEditing={sendMessage}
               />
-            )}
 
-            renderSend={(props) => (
-              <Send {...props} containerStyle={styles.sendContainer}>
-                <View style={styles.sendButton}>
-                  <Image
-                    source={require("./assets/send.png")}
-                    style={{ width: 18, height: 18, tintColor: "#fff" }}
-                  />
-                </View>
-              </Send>
-            )}
-          />
-        </View>
-
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  typing && { opacity: 0.5 }
+                ]}
+                onPress={sendMessage}
+                disabled={typing}
+              >
+                <Text style={styles.sendText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </SafeAreaView>
-
     </SafeAreaProvider>
   );
 }
@@ -133,47 +173,73 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#121212"
   },
+  wrapper: {
+    flex: 1
+  },
   header: {
-    paddingTop: 10,
-    paddingBottom: 10,
     backgroundColor: "#2979FF",
-    alignItems: "center"
-  },
-  sendContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 6,
-    marginBottom: 2
-  },
-  sendButton: {
-    backgroundColor: "#2979FF",
-    borderRadius: 18,
-    padding: 10,
-    justifyContent: "center",
+    padding: 15,
     alignItems: "center"
   },
   headerText: {
-    fontSize: 18,
     color: "#fff",
+    fontSize: 18,
     fontWeight: "bold"
   },
-  inputToolbar: {
-    marginHorizontal: 10,
-    marginBottom: 45,
+  listContent: {
+    padding: 10,
+    flexGrow: 1
+  },
+  messageContainer: {
+    maxWidth: "75%",
+    padding: 10,
     borderRadius: 10,
+    marginVertical: 5
+  },
+  userMessage: {
+    backgroundColor: "#2979FF",
+    alignSelf: "flex-end"
+  },
+  botMessage: {
+    backgroundColor: "#2A2A2A",
+    alignSelf: "flex-start"
+  },
+  messageText: {
+    color: "#fff"
+  },
+  inputContainer: {
+    flexDirection: "row",
+    padding: 10,
     backgroundColor: "#1F1F1F",
-    borderTopWidth: 0,
-    paddingHorizontal: 5,
-    paddingVertical: 4,
     alignItems: "center"
   },
-  textInput: {
+  input: {
     flex: 1,
     backgroundColor: "#2A2A2A",
     color: "#fff",
     borderRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: 10,
-    minHeight: 40
+    minHeight: 45,
+    maxHeight: 100
   },
+  sendButton: {
+    backgroundColor: "#2979FF",
+    marginLeft: 10,
+    borderRadius: 20,
+    justifyContent: "center",
+    paddingHorizontal: 15,
+    height: 45
+  },
+  sendText: {
+    color: "#fff",
+    fontWeight: "bold"
+  },
+  typingContainer: {
+    flexDirection: "row",
+    paddingLeft: 15,
+    paddingBottom: 5
+  },
+  typingText: {
+    color: "#aaa"
+  }
 });
