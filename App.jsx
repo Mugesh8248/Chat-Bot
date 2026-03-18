@@ -32,11 +32,12 @@ export default function App() {
     setMessages([
       {
         id: "1",
-        text: "Please enter your mobile number 📱",
+        text: "Please enter your mobile number",
         sender: "bot"
       }
     ]);
   }, []);
+
 
   const sendMessage = async () => {
     if (!input.trim() || typing) return;
@@ -50,12 +51,13 @@ export default function App() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+
     setInput("");
     setTyping(true);
 
     try {
       const response = await axios.post(
-        "http://192.168.0.108:8000/chat",
+        "http://192.168.29.199:8000/chat",
         {
           user_id: userId,
           message: rawText
@@ -67,6 +69,8 @@ export default function App() {
           timeout: 10000
         }
       );
+
+      console.log("Bot response", response);
 
       const botMessage = {
         id: Math.random().toString(),
@@ -113,7 +117,7 @@ export default function App() {
           <KeyboardAvoidingView
             style={styles.wrapper}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "android" ? 25 : 0}
+            keyboardVerticalOffset={Platform.OS === "android" ? 35 : 0}
           >
             <View style={styles.header}>
               <Text style={styles.headerText}>Service Chat Bot</Text>
@@ -125,7 +129,8 @@ export default function App() {
               keyExtractor={item => item.id}
               renderItem={renderItem}
               contentContainerStyle={styles.listContent}
-              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              style={{ flex: 1 }}
               onContentSizeChange={() =>
                 flatListRef.current?.scrollToEnd({ animated: true })
               }
@@ -188,7 +193,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 10,
-    flexGrow: 1
+    paddingBottom: 20,
   },
   messageContainer: {
     maxWidth: "75%",
